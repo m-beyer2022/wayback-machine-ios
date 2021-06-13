@@ -10,7 +10,7 @@ import Foundation
 
 let APP_VERSION = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
 let APP_BUILD = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "0"
-let DEBUG_LOG = false
+let DEBUG_LOG = true
 
 class WMConstants {
     static let errors :[Int: String] = [

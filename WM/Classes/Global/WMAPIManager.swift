@@ -322,31 +322,40 @@ class WMAPIManager: NSObject {
     
     func request_capture(url: String, logged_in_user: HTTPCookie, logged_in_sig: HTTPCookie, completion: @escaping (String?) -> Void) {
         
+        // this may not work because cookies may have expired!
         Alamofire.SessionManager.default.session.configuration.httpCookieStorage?.setCookie(logged_in_user)
         Alamofire.SessionManager.default.session.configuration.httpCookieStorage?.setCookie(logged_in_sig)
         
         let param = ["url" : url]
         var headers = ["Accept": "application/json"]
         
+        // TEST by manually setting cookie header
+        // let cookie = "\(logged_in_user.name)=\(logged_in_user.value); \(logged_in_sig.name)=\(logged_in_sig.value)"
+        // headers["Cookie"] = cookie
+
         for (key, value) in HEADERS {
             headers[key] = value
         }
-        
+
         Alamofire.request(SPN2_URL, method: .post,
                           parameters: param,
                           headers: headers)
             .responseJSON{ (response) in
-                            
+
                 switch response.result {
                 case .success:
+                    // TODO: check for response status = 401 ??
                     if let json = response.result.value as? [String: Any],
                         let job_id = json["job_id"] as? String {
                         completion(job_id)
                     } else {
+                        // response.result.value could be this:
+                        // { message: "You need to be logged in to use Save Page Now." }
+                        if (DEBUG_LOG) { NSLog("*** request_capture(): bad response: \(String(describing: response.result.value))") }
                         completion(nil)
                     }
                 case .failure(let error):
-                    print(error.localizedDescription)
+                    if (DEBUG_LOG) { NSLog("*** request_capture(): request failed: " + error.localizedDescription) }
                     completion(nil)
             }
         }

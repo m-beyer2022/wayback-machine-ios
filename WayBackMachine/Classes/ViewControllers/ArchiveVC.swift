@@ -218,6 +218,7 @@ class ArchiveVC: UIViewController, UIImagePickerControllerDelegate, UIPopoverCon
                     WMAPIManager.sharedManager.request_capture(url: self.urlTextField.text!, logged_in_user: loggedInUser, logged_in_sig: loggedInSig, completion: { (job_id) in
                         if job_id == nil {
                             MBProgressHUD.hide(for: self.view, animated: true)
+                            WMGlobal.showAlert(title: "Error", message: "Save Failed!", target: self)
                         } else {
                             WMAPIManager.sharedManager.request_capture_status(job_id: job_id!, logged_in_user: loggedInUser, logged_in_sig: loggedInSig, completion: { (url, error) in
                                 MBProgressHUD.hide(for: self.view, animated: true)
