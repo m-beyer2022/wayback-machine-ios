@@ -162,7 +162,6 @@ class WMSAPIManager {
     // PUT
     // DELETE
     // POST
-    // TODO: operation should be an enum!
     //func SendDataToService(params: [String: Any], operation: String, completion: @escaping ([String: Any]?) -> Void) {
     func SendDataToService(params: [String: Any], operation: XAuthOperation, completion: @escaping ([String: Any]?) -> Void) {
 
@@ -198,6 +197,7 @@ class WMSAPIManager {
     /// - returns: *Keys*:
     ///   email, logged-in-user, logged-in-sig, s3accesskey, s3secretkey
     ///
+    // TODO: needs to return a better error response instead of just nil.
     func login(email: String, password: String, completion: @escaping ([String: Any?]?) -> Void) {
 
         webLogin(email: email, password: password) {
@@ -212,6 +212,7 @@ class WMSAPIManager {
                         let data: [String: Any?] = [
                             // password not stored
                             "email"          : email,
+                            //"screenname"     : screenname, // TODO
                             "logged-in-user" : loggedInUser,
                             "logged-in-sig"  : loggedInSig,
                             "s3accesskey"    : accessKey,
@@ -697,31 +698,47 @@ class WMSAPIManager {
     ///////////////////////////////////////////////////////////////////////////////////
     // MARK: - More APIs
 
-    // TODO: Need to redo these parameters to work with S3 tokens and not cookies!
-    // TODO: REWRITE CODE
-    func saveToMyWebArchive(url: String, snapshot: String, logged_in_user: HTTPCookie, logged_in_sig: HTTPCookie, completion: @escaping (Bool) -> Void) {
-    
-        Alamofire.SessionManager.default.session.configuration.httpCookieStorage?.setCookie(logged_in_user)
-        Alamofire.SessionManager.default.session.configuration.httpCookieStorage?.setCookie(logged_in_sig)
-        
-        let param = [
+    /// Saves a url to user's "My Web Archive".
+    /// Provide `loggedInUser` & `loggedInSig` to use cookie auth.
+    /// Or `accessKey` & `secretKey` to use S3 auth. Must pick one or the other.
+    /// - parameter url
+    /// - parameter snapshot
+    /// - parameter loggedInUser: Cookie string for short-term auth.
+    /// - parameter loggedInSig: Cookie string for short-term auth.
+    /// - parameter accessKey: String for long-term S3 auth.
+    /// - parameter secretKey: String for long-term S3 auth.
+    /// - parameter completion:
+    /// - parameter isSuccess: Bool true if successful.
+    ///
+    func saveToMyWebArchive(url: String, snapshot: String,
+                            loggedInUser: String? = nil, loggedInSig: String? = nil,
+                            accessKey: String? = nil, secretKey: String? = nil,
+                            //logged_in_user: HTTPCookie, logged_in_sig: HTTPCookie, // OLD
+                            completion: @escaping (_ isSuccess: Bool) -> Void)
+    {
+        // prepare cookies
+        if let loggedInUser = loggedInUser, let loggedInSig = loggedInSig {
+            setArchiveCookie(name: "logged-in-user", value: loggedInUser)
+            setArchiveCookie(name: "logged-in-sig", value: loggedInSig)
+        }
+        // prepare request
+        var headers = WMSAPIManager.HEADERS
+        headers["Accept"] = "application/json"
+        if let accessKey = accessKey, let secretKey = secretKey {
+            headers["Authorization"] = "LOW \(accessKey):\(secretKey)"
+        }
+        let params = [
             "url" : url,
             "snapshot" : snapshot,
             "tags" : []
-            ] as [String : Any]
-        
-        var headers = ["Content-Type": "application/json"]
-        
-        for (key, value) in WMSAPIManager.HEADERS {
-            headers[key] = value
-        }
-        
-        Alamofire.request(WMSAPIManager.API_BASE_URL + WMSAPIManager.API_MY_WEB_ARCHIVE, method: .post,
-                          parameters: param,
-                          encoding: JSONEncoding.default,
-                          headers: headers)
+        ] as Parameters
+
+        // make request
+        Alamofire.request(WMSAPIManager.API_BASE_URL + WMSAPIManager.API_MY_WEB_ARCHIVE,
+                          method: .post, parameters: params,
+                          encoding: JSONEncoding.default, headers: headers)
             .responseJSON { (response) in
-            
+
             switch response.result {
             case .success( _):
                 if let json = response.result.value as? [String: Any],

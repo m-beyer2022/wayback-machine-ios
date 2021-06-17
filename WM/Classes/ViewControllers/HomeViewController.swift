@@ -59,7 +59,7 @@ class HomeViewController: UIViewController, UITextFieldDelegate, MBProgressHUDDe
             WMGlobal.showAlert(title: "", message: "The URL is invalid", target: self)
         } else {
             showProgress()
-            WMAPIManager.sharedManager.checkURLBlocked(url: getURL(url: tURL), completion: { (isBlocked) in
+            WMSAPIManager.shared.checkURLBlocked(url: getURL(url: tURL), completion: { (isBlocked) in
                 
                 if isBlocked {
                     WMGlobal.showAlert(title: "Error", message: "That site's robots.txt policy requests we not archive it.", target: self)
@@ -108,7 +108,7 @@ class HomeViewController: UIViewController, UITextFieldDelegate, MBProgressHUDDe
                                     self.hideProgress(isBlocked)
                                     if let shareVC = self.storyboard?.instantiateViewController(withIdentifier: "ShareVC") as? ShareVC {
                                         shareVC.modalPresentationStyle = .fullScreen
-                                        shareVC.url = url!
+                                        shareVC.shareUrl = url!
                                         DispatchQueue.main.async {
                                             self.present(shareVC, animated: true, completion: nil)
                                         }
@@ -135,7 +135,7 @@ class HomeViewController: UIViewController, UITextFieldDelegate, MBProgressHUDDe
         } else {
             showProgress()
             
-            WMAPIManager.sharedManager.checkURLBlocked(url: self.getURL(url: tURL), completion: { (isBlocked) in
+            WMSAPIManager.shared.checkURLBlocked(url: self.getURL(url: tURL), completion: { (isBlocked) in
                 if isBlocked {
                     self.hideProgress(isBlocked)
                     WMGlobal.showAlert(title: "", message: "That site's robots.txt policy requests we not play back archives", target: self)

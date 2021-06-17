@@ -93,7 +93,7 @@ class UploadVC: UIViewController, UIImagePickerControllerDelegate, UIPopoverCont
         let startTime = Date()
         MBProgressHUD.showAdded(to: self.view, animated: true)
         
-        WMAPIManager.sharedManager.SendDataToBucket(params: [
+        WMSAPIManager.shared.SendDataToBucket(params: [
             "identifier" : identifier,
             "title": title,
             "description": description,

@@ -228,7 +228,7 @@ class ArchiveVC: UIViewController, UIImagePickerControllerDelegate, UIPopoverCon
                                     let storyBoard = UIStoryboard(name: "Main", bundle: nil)
                                     if let shareVC = storyBoard.instantiateViewController(withIdentifier: "ShareVC") as? ShareVC {
                                         shareVC.modalPresentationStyle = .fullScreen
-                                        shareVC.url = url ?? ""
+                                        shareVC.shareUrl = url ?? ""
                                         DispatchQueue.main.async {
                                             self.present(shareVC, animated: true, completion: nil)
                                         }

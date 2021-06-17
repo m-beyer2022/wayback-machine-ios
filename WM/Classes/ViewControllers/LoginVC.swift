@@ -41,8 +41,9 @@ class LoginVC: WMBaseVC, UITextFieldDelegate {
         
         login(email: self.txtEmail.text ?? "", password: self.txtPassword.text ?? "")
     }
-    
-    func login(email: String, password: String) {
+/*
+    // NO LONGER USING
+    func oldLogin(email: String, password: String) {
         MBProgressHUD.showAdded(to: self.view, animated: true)
         WMAPIManager.sharedManager.login(email: email, password: password, completion: {(data1) in
             guard let data1 = data1 else {
@@ -110,7 +111,56 @@ class LoginVC: WMBaseVC, UITextFieldDelegate {
 
         })
     }
-    
+*/
+    func login(email: String, password: String) {
+
+        // just return if empty, since error alert already done elsewhere
+        if email.isEmpty || password.isEmpty { return }
+
+        //enableLogin(false) // REMOVE
+        MBProgressHUD.showAdded(to: self.view, animated: true)
+
+        WMSAPIManager.shared.login(email: email, password: password) { (userData) in
+            MBProgressHUD.hide(for: self.view, animated: true)
+
+            //self.enableLogin(true) // REMOVE
+            if var userData = userData {
+                // success
+                userData["add-to-my-web-archive"] = self.btnCheck.isSelected
+                WMGlobal.saveUserData(userData: userData)
+
+                if let tabbarVC = self.storyboard?.instantiateViewController(withIdentifier: "TabbarVC") as? UITabBarController {
+                  tabbarVC.modalPresentationStyle = .fullScreen
+                  self.present(tabbarVC, animated: true, completion: {
+                    self.navigationController?.popToRootViewController(animated: false)
+                  })
+                }
+            } else {
+                // failure
+                WMGlobal.showAlert(title: "Login Failed", message: "Try entering your email and password again, or create a new account.", target: self)
+
+                // TODO: REDO?
+                // from old iOS code, need values from json data,
+                // which means I need better error response from WMSAPIManager.login()
+                /*
+                if let values = data1["values"] as? [String: Any],
+                   let reason = values["reason"] as? String
+                {
+                    if reason == WMConstants.errors[301] {
+                        WMGlobal.showAlert(title: "", message: "Incorrect password!", target: self)
+                    } else if reason == WMConstants.errors[302] {
+                        WMGlobal.showAlert(title: "", message: "Account not found", target: self)
+                    } else if reason == WMConstants.errors[303] {
+                        WMGlobal.showAlert(title: "", message: "Account is not verified", target: self)
+                    }
+                } else {
+                    WMGlobal.showAlert(title: "", message: "Unknown error", target: self)
+                }
+                */
+            }
+        }
+    }
+
     // MARK: - Delegates
     
     func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
