@@ -16,13 +16,15 @@ class ProfileVC: WMBaseVC {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        if let userData = WMGlobal.getUserData(),
-            let screenname = userData["screenname"] as? String,
-            let addToMyWebArchive = userData["add-to-my-web-archive"] as? Bool {
-            self.lblDescription.text = (self.lblDescription.text ?? "") + screenname
-            self.switchMyWebArchive.isOn = addToMyWebArchive
+        // TODO: check this!
+        if let userData = WMGlobal.getUserData() {
+            if let screenname = userData["screenname"] as? String {
+                self.lblDescription.text = (self.lblDescription.text ?? "") + screenname
+            }
+            if let addToMyWebArchive = userData["add-to-my-web-archive"] as? Bool {
+                self.switchMyWebArchive.isOn = addToMyWebArchive
+            }
         }
-        
     }
     
     
@@ -35,6 +37,8 @@ class ProfileVC: WMBaseVC {
     }
     
     @IBAction func onLogoutPressed(_ sender: Any) {
+
+        /* TO REMOVE
         WMGlobal.saveUserData(userData: [
             "email"             : nil,
             "password"          : nil,
@@ -47,6 +51,12 @@ class ProfileVC: WMBaseVC {
             "add-to-my-web-archive" : false
         ])
         WMAPIManager.sharedManager.logout()
+        */
+
+        // clear any stored login data
+        if let userData = WMSAPIManager.shared.logout(userData: WMGlobal.getUserData()) {
+            WMGlobal.saveUserData(userData: userData)
+        }
         self.tabBarController?.dismiss(animated: false, completion: nil)
     }
     

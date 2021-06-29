@@ -49,26 +49,66 @@ class HomeViewController: UIViewController, UITextFieldDelegate, MBProgressHUDDe
     }
 
     @IBAction func _onSave(_ sender: Any) {
+
         let tURL = self.txtURL.text ?? ""
         if tURL.isEmpty {
             WMGlobal.showAlert(title: "", message: "Please type a URL", target: self)
             return
         }
-        
-        if (!verifyURL(url: getURL(url: tURL))) {
+        let saveURL = self.getURL(url: tURL)
+
+        if (!verifyURL(url: saveURL)) {
             WMGlobal.showAlert(title: "", message: "The URL is invalid", target: self)
         } else {
             showProgress()
-            WMSAPIManager.shared.checkURLBlocked(url: getURL(url: tURL), completion: { (isBlocked) in
+            WMSAPIManager.shared.checkURLBlocked(url: saveURL) {
+                (isBlocked) in
                 
                 if isBlocked {
                     WMGlobal.showAlert(title: "Error", message: "That site's robots.txt policy requests we not archive it.", target: self)
                     self.hideProgress(isBlocked)
                     return
                 }
-                
-                if let userData = WMGlobal.getUserData() {
+
+                if let userData = WMGlobal.getUserData(), let loggedIn = userData["logged-in"] as? Bool, loggedIn == true {
+                    // Save Page Now
+                    let loggedInUser = userData["logged-in-user"] as? String,
+                        loggedInSig = userData["logged-in-sig"] as? String,
+                        accessKey = userData["s3accesskey"] as? String,
+                        secretKey = userData["s3secretkey"] as? String
+
+                    WMSAPIManager.shared.capturePage(url: saveURL, loggedInUser: loggedInUser, loggedInSig: loggedInSig, accessKey: accessKey, secretKey: secretKey, options: []) {
+                        (jobId, error) in
+
+                        guard let jobId = jobId else {
+                            // exit if SPN fails
+                            self.hideProgress(isBlocked)
+                            return
+                        }
+
+                        WMSAPIManager.shared.getPageStatus(jobId: jobId, loggedInUser: loggedInUser, loggedInSig: loggedInSig, accessKey: accessKey, secretKey: secretKey, options: []) {
+                            (resources) in
+                            // pending
+
+                        } completion: {
+                            (archiveURL, errMsg, resultJSON) in
+
+                            self.hideProgress(isBlocked)
+                            guard let archiveURL = archiveURL else {
+                                WMGlobal.showAlert(title: "Error", message: (errMsg ?? ""), target: self)
+                                return
+                            }
+                            if let shareVC = self.storyboard?.instantiateViewController(withIdentifier: "ShareVC") as? ShareVC {
+                                shareVC.modalPresentationStyle = .fullScreen
+                                shareVC.shareUrl = archiveURL
+                                DispatchQueue.main.async {
+                                    self.present(shareVC, animated: true, completion: nil)
+                                }
+                            }
+                        } // getPageStatus
+                    } // capturePage
                     
+/* TO REMOVE
                     WMAPIManager
                         .sharedManager
                         .getCookieData(email: userData["email"] as? String ?? "",
@@ -117,11 +157,11 @@ class HomeViewController: UIViewController, UITextFieldDelegate, MBProgressHUDDe
                             })
                         })
                     })
-                }
-            })
-            
-        }
-    }
+*/
+                } // userData
+            } // checkURLBlocked
+        } // verifyURL
+    } // func _onSave
 
     @IBAction func _onRecent(_ sender: Any) {
         let tURL = self.txtURL.text ?? ""
@@ -166,7 +206,7 @@ class HomeViewController: UIViewController, UITextFieldDelegate, MBProgressHUDDe
         } else {
             showProgress()
             
-            WMAPIManager.sharedManager.checkURLBlocked(url: self.getURL(url: tURL), completion: { (isBlocked) in
+            WMSAPIManager.shared.checkURLBlocked(url: self.getURL(url: tURL), completion: { (isBlocked) in
                 if isBlocked {
                     self.hideProgress(isBlocked)
                     self.showErrorMessage(message: "That site's robots.txt policy requests we not play back archives")
@@ -196,7 +236,7 @@ class HomeViewController: UIViewController, UITextFieldDelegate, MBProgressHUDDe
             showErrorMessage(message: "The URL is invalid")
         } else {
             showProgress()
-            WMAPIManager.sharedManager.checkURLBlocked(url: self.getURL(url: tURL), completion: { (isBlocked) in
+            WMSAPIManager.shared.checkURLBlocked(url: self.getURL(url: tURL), completion: { (isBlocked) in
                 if isBlocked {
                     self.hideProgress(isBlocked)
                     self.showErrorMessage(message: "That site's robots.txt policy requests we not play back archives")

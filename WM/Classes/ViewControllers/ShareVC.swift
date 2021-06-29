@@ -19,6 +19,7 @@ open class ShareVC: UIViewController {
     open override func viewDidLoad() {
         super.viewDidLoad()
         
+        // TODO: why / what is this doing?
         if let userData = WMGlobal.getUserData(),
             let addToMyWebArchive = userData["add-to-my-web-archive"] as? Bool,
             addToMyWebArchive == true {

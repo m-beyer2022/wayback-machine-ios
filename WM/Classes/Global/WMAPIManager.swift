@@ -5,6 +5,7 @@
 //  Created by mac-admin on 8/23/17.
 //  Copyright © 2017 Admin. All rights reserved.
 //
+// ** OLD CODE: Please use WMSAPIManager instead! **
 
 import Foundation
 import Alamofire

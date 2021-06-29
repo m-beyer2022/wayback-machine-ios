@@ -200,46 +200,81 @@ class ArchiveVC: UIViewController, UIImagePickerControllerDelegate, UIPopoverCon
     
     //- MARK: Actions
     @IBAction func _onOK(_ sender: Any) {
-        let userData = WMGlobal.getUserData()
-        if let userData = userData,
-           let userProps = userData["logged-in-user"] as? [HTTPCookiePropertyKey : Any],
-           let sigProps = userData["logged-in-sig"] as? [HTTPCookiePropertyKey : Any],
-           let loggedInUser = HTTPCookie.init(properties: userProps),
-           let loggedInSig = HTTPCookie.init(properties: sigProps)
+        guard let saveURL = self.urlTextField.text else {
+            WMGlobal.showAlert(title: "", message: "Please enter a URL", target: self)
+            return
+        }
+        if let userData = WMGlobal.getUserData(),
+           // REMOVE
+           //let userProps = userData["logged-in-user"] as? [HTTPCookiePropertyKey : Any],
+           //let sigProps = userData["logged-in-sig"] as? [HTTPCookiePropertyKey : Any],
+           //let loggedInUser = HTTPCookie.init(properties: userProps),
+           //let loggedInSig = HTTPCookie.init(properties: sigProps)
+           let loggedInUser = userData["logged-in-user"] as? String,
+           let loggedInSig = userData["logged-in-sig"] as? String,
+           let accessKey = userData["s3accesskey"] as? String,
+           let secretKey = userData["s3secretkey"] as? String
         {
             let hud = MBProgressHUD.showAdded(to: self.view, animated: true)
-            WMAPIManager.sharedManager.checkURLBlocked(url: self.urlTextField.text!, completion: { (isBlocked) in
+
+            WMSAPIManager.shared.checkURLBlocked(url: saveURL)
+            { (isBlocked) in
+/* REMOVE
+            WMAPIManager.sharedManager.checkURLBlocked(url: saveURL, completion: { (isBlocked) in
+*/
                 if isBlocked {
                     MBProgressHUD.hide(for: self.view, animated: true)
                     WMGlobal.showAlert(title: "Error", message: "That site's robots.txt policy requests we not archive it.", target: self)
-                } else {
-                    hud.label.text = "Archiving..."
-                    hud.detailsLabel.text = "May take a while."
-                    WMAPIManager.sharedManager.request_capture(url: self.urlTextField.text!, logged_in_user: loggedInUser, logged_in_sig: loggedInSig, completion: { (job_id) in
-                        if job_id == nil {
-                            MBProgressHUD.hide(for: self.view, animated: true)
-                            WMGlobal.showAlert(title: "Error", message: "Save Failed!", target: self)
-                        } else {
-                            WMAPIManager.sharedManager.request_capture_status(job_id: job_id!, logged_in_user: loggedInUser, logged_in_sig: loggedInSig, completion: { (url, error) in
-                                MBProgressHUD.hide(for: self.view, animated: true)
-                                if url == nil {
-                                    WMGlobal.showAlert(title: "Error", message: (error ?? ""), target: self)
-                                } else {
-                                    let storyBoard = UIStoryboard(name: "Main", bundle: nil)
-                                    if let shareVC = storyBoard.instantiateViewController(withIdentifier: "ShareVC") as? ShareVC {
-                                        shareVC.modalPresentationStyle = .fullScreen
-                                        shareVC.shareUrl = url ?? ""
-                                        DispatchQueue.main.async {
-                                            self.present(shareVC, animated: true, completion: nil)
-                                        }
-                                    }
-                                }
-                            })
-                        }
-                    })
+                    return
                 }
-            })
+
+                hud.label.text = "Archiving..."
+                hud.detailsLabel.text = "May take a while."
+
+                WMSAPIManager.shared.capturePage(url: saveURL,
+                    loggedInUser: loggedInUser, loggedInSig: loggedInSig,
+                    accessKey: accessKey, secretKey: secretKey, options: [])
+                { (job_id, error) in
+/* REMOVE
+                WMAPIManager.sharedManager.request_capture(url: archiveUrl, logged_in_user: loggedInUser, logged_in_sig: loggedInSig, completion: { (job_id) in
+*/
+                    guard let job_id = job_id else {
+                        MBProgressHUD.hide(for: self.view, animated: true)
+                        WMGlobal.showAlert(title: "Error", message: "Save Failed!", target: self)
+                        return
+                    }
+
+                    WMSAPIManager.shared.getPageStatus(jobId: job_id,
+                        loggedInUser: loggedInUser, loggedInSig: loggedInSig,
+                        accessKey: accessKey, secretKey: secretKey, options: [])
+                    { resources in
+                        // pending
+                        if let resources = resources {
+                            // update HUD with count of URLs archived
+                            hud.detailsLabel.text = "\(resources.count)"
+                        }
+                    } completion: { archiveURL, errMsg, resultJSON in
+/* REMOVE
+                        WMAPIManager.sharedManager.request_capture_status(job_id: job_id!, logged_in_user: loggedInUser, logged_in_sig: loggedInSig, completion: { (url, error) in
+*/
+                        MBProgressHUD.hide(for: self.view, animated: true)
+                        if archiveURL == nil {
+                            WMGlobal.showAlert(title: "Error", message: (errMsg ?? ""), target: self)
+                        } else {
+                            let storyBoard = UIStoryboard(name: "Main", bundle: nil)
+                            if let shareVC = storyBoard.instantiateViewController(withIdentifier: "ShareVC") as? ShareVC {
+                                shareVC.modalPresentationStyle = .fullScreen
+                                shareVC.shareUrl = archiveURL ?? ""
+                                DispatchQueue.main.async {
+                                    self.present(shareVC, animated: true, completion: nil)
+                                }
+                            }
+                        }
+                    } // end completion
+                }
+            } // checkURLBlocked
         } else {
+            // userData missing login data
             WMGlobal.showAlert(title: "", message: "You need to login through Wayback Machine app.", target: self)
         }
     }
@@ -265,7 +300,7 @@ class ArchiveVC: UIViewController, UIImagePickerControllerDelegate, UIPopoverCon
         let startTime = Date()
         MBProgressHUD.showAdded(to: self.view, animated: true)
         
-        WMAPIManager.sharedManager.SendDataToBucket(params: [
+        WMSAPIManager.shared.SendDataToBucket(params: [
             "identifier" : identifier,
             "title": title,
             "description": description,

@@ -39,10 +39,11 @@ class LoginVC: WMBaseVC, UITextFieldDelegate {
             return
         }
         
+        //oldLogin(email: self.txtEmail.text ?? "", password: self.txtPassword.text ?? "")
         login(email: self.txtEmail.text ?? "", password: self.txtPassword.text ?? "")
     }
-/*
-    // NO LONGER USING
+
+    // REMOVE: NO LONGER USING
     func oldLogin(email: String, password: String) {
         MBProgressHUD.showAdded(to: self.view, animated: true)
         WMAPIManager.sharedManager.login(email: email, password: password, completion: {(data1) in
@@ -51,6 +52,8 @@ class LoginVC: WMBaseVC, UITextFieldDelegate {
                 WMGlobal.showAlert(title: "", message: "Server error", target: self)
                 return
             }
+            if (DEBUG_LOG) { NSLog("*** oldLogin() data1: \(data1)") } // TEST TO REMOVE "Unauthorized"!!
+
                 if (data1["success"] as? Bool) ?? false {
                     WMAPIManager.sharedManager.getAccountInfo(email: email, completion: { (data2) in
                         
@@ -111,32 +114,48 @@ class LoginVC: WMBaseVC, UITextFieldDelegate {
 
         })
     }
-*/
+
     func login(email: String, password: String) {
 
         // just return if empty, since error alert already done elsewhere
         if email.isEmpty || password.isEmpty { return }
 
-        //enableLogin(false) // REMOVE
         MBProgressHUD.showAdded(to: self.view, animated: true)
 
         WMSAPIManager.shared.login(email: email, password: password) { (userData) in
-            MBProgressHUD.hide(for: self.view, animated: true)
+        //WMSAPIManager.shared.authLogin(email: email, password: password) { (userData) in // Unauthorized error // REMOVE for now since login() works
 
-            //self.enableLogin(true) // REMOVE
+            if (DEBUG_LOG) { NSLog("*** LoginVC login() userData: \(String(describing: userData))") } // TEST TO REMOVE
+
             if var userData = userData {
                 // success
                 userData["add-to-my-web-archive"] = self.btnCheck.isSelected
-                WMGlobal.saveUserData(userData: userData)
 
-                if let tabbarVC = self.storyboard?.instantiateViewController(withIdentifier: "TabbarVC") as? UITabBarController {
-                  tabbarVC.modalPresentationStyle = .fullScreen
-                  self.present(tabbarVC, animated: true, completion: {
-                    self.navigationController?.popToRootViewController(animated: false)
-                  })
+                WMSAPIManager.shared.getScreenName(email: email,
+                    // loggedInUser: nil, loggedInSig: nil, // TEST
+                    loggedInUser: userData["logged-in-user"] as? String,
+                    loggedInSig: userData["logged-in-sig"] as? String,
+                    accessKey: userData["s3accesskey"] as? String,
+                    secretKey: userData["s3secretkey"] as? String)
+                {
+                    (screenname) in
+                    MBProgressHUD.hide(for: self.view, animated: true)
+                    if let screenname = screenname {
+                        userData["screenname"] = screenname
+                    }
+                    WMGlobal.saveUserData(userData: userData)
+
+                    // display tabbar VC
+                    if let tabbarVC = self.storyboard?.instantiateViewController(withIdentifier: "TabbarVC") as? UITabBarController {
+                      tabbarVC.modalPresentationStyle = .fullScreen
+                      self.present(tabbarVC, animated: true, completion: {
+                        self.navigationController?.popToRootViewController(animated: false)
+                      })
+                    }
                 }
             } else {
                 // failure
+                MBProgressHUD.hide(for: self.view, animated: true)
                 WMGlobal.showAlert(title: "Login Failed", message: "Try entering your email and password again, or create a new account.", target: self)
 
                 // TODO: REDO?

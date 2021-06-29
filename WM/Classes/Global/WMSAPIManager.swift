@@ -6,6 +6,10 @@
 //
 //  This code is meant to be shared across the Safari Extension, iOS, and TV apps.
 //  Any modifications should be synced across apps.
+//
+// TODO:
+// This code really should be rewritten so that the auth keys
+// are stored within this class and not passed in methods calls from outside.
 
 import Foundation
 import Alamofire
@@ -22,10 +26,6 @@ class WMSAPIManager {
         case allErrors, outlinks, screenshot, availability, emailOutlinks
     }
     public typealias CaptureOptions = [CaptureOption]
-
-    public enum XAuthOperation {
-        case create, login, info
-    }
 
     // MARK: - API Constants
 
@@ -55,14 +55,21 @@ class WMSAPIManager {
 
     static var UPLOAD_BASE_URL     = "https://s3.us.archive.org"
 
+    // Xauthn Authentication Service
     static var XA_BASE_URL         = "https://archive.org/services/xauthn/" // BASE_URL
-    static let XA_ACCESS           = "trS8dVjP8dzaE296"
-    static let XA_SECRET           = "ICXDO78cnzUlPAt1"
+    //static let XA_ACCESS           = "trS8dVjP8dzaE296" // TODO: REMOVE
+    //static let XA_SECRET           = "ICXDO78cnzUlPAt1" // TODO: REMOVE
     static let XA_VERSION          = 1
+    public enum XAuthOperation {
+        case info, authenticate, identify, create, chkprivs, login
+    }
     static let XA_OPS: [XAuthOperation: String] = [
+        .info: "?op=info",
+        .authenticate: "?op=authenticate",
+        .identify: "?op=identify",
         .create: "?op=create",
-        .login:  "?op=authenticate",
-        .info:   "?op=info"
+        .chkprivs: "?op=chkprivs",
+        .login: "?op=login"
     ]
     // TO REMOVE
     static let XA_CREATE           = "?op=create"
@@ -93,7 +100,7 @@ class WMSAPIManager {
     static let HEADERS: HTTPHeaders = [
         "User-Agent": "Wayback_Machine_iOS/\(APP_VERSION)",
         "Wayback-Extension-Version": "Wayback_Machine_iOS/\(APP_VERSION)",
-        "Wayback-Api-Version": "2"
+        /* "Wayback-Api-Version": "2" */
     ]
     #elseif os(tvOS)
     #endif
@@ -142,7 +149,7 @@ class WMSAPIManager {
     // MARK: - API Wrappers
 
     // GET
-    func SendDataToSparkLine(params: [String: Any], completion: @escaping ([String: Any]?) -> Void) {
+    func SendDataToSparkLine(params: Parameters, completion: @escaping ([String: Any]?) -> Void) {
 
         Alamofire.request(WMSAPIManager.API_BASE_URL + WMSAPIManager.API_SPARKLINE,
                           method: .get, parameters: params, headers: WMSAPIManager.HEADERS)
@@ -159,28 +166,57 @@ class WMSAPIManager {
         }
     }
     
-    // PUT
-    // DELETE
-    // POST
-    //func SendDataToService(params: [String: Any], operation: String, completion: @escaping ([String: Any]?) -> Void) {
-    func SendDataToService(params: [String: Any], operation: XAuthOperation, completion: @escaping ([String: Any]?) -> Void) {
-
-        var parameters          = params
-        parameters["access"]    = WMSAPIManager.XA_ACCESS
-        parameters["secret"]    = WMSAPIManager.XA_SECRET
-        parameters["version"]   = WMSAPIManager.XA_VERSION
+    // WAS: SendDataToService(params: [String: Any], operation: String, completion: @escaping ([String: Any]?) -> Void) {
+    /// Xauthn Authentication Service
+    /// This API will use Cookies before using S3 credentials.
+    ///
+    func SendDataToService(params: Parameters, operation: XAuthOperation,
+                           loggedInUser: String? = nil, loggedInSig: String? = nil,
+                           accessKey: String? = nil, secretKey: String? = nil,
+                           completion: @escaping ([String: Any]?) -> Void)
+    {
         guard let opPath = WMSAPIManager.XA_OPS[operation] else { return }
+        let url = WMSAPIManager.XA_BASE_URL + opPath
 
-        Alamofire.request(WMSAPIManager.XA_BASE_URL + opPath, method: .post, parameters: parameters,
-                          encoding: JSONEncoding.default, headers: WMSAPIManager.HEADERS)
+        // TEST TO REMOVE
+        if (DEBUG_LOG) { NSLog("*** SendDataToService() url: \(url)") }
+        if (DEBUG_LOG) { NSLog("***   loggedInUser: \(String(describing: loggedInUser))") }
+        if (DEBUG_LOG) { NSLog("***   loggedInSig: \(String(describing: loggedInSig))") }
+        if (DEBUG_LOG) { NSLog("***   accessKey: \(String(describing: accessKey))") }
+        if (DEBUG_LOG) { NSLog("***   secretKey: \(String(describing: secretKey))") }
+
+        // prepare cookies
+        if let loggedInUser = loggedInUser, let loggedInSig = loggedInSig {
+            setArchiveCookie(name: "logged-in-user", value: loggedInUser)
+            setArchiveCookie(name: "logged-in-sig", value: loggedInSig)
+        }
+
+        // prepare request
+        var parameters = params
+        parameters["version"]   = WMSAPIManager.XA_VERSION
+        var headers = WMSAPIManager.HEADERS
+        headers["Accept"] = "application/json"
+        if let accessKey = accessKey, let secretKey = secretKey {
+            parameters["access"] = accessKey // WMSAPIManager.XA_ACCESS
+            parameters["secret"] = secretKey // WMSAPIManager.XA_SECRET
+            //headers["Authorization"] = "LOW \(accessKey):\(secretKey)" // TEST: still not working
+        }
+
+        // TEST TO REMOVE
+        if (DEBUG_LOG) { NSLog("***   headers: \(headers)") }
+        if (DEBUG_LOG) { NSLog("***   params: \(parameters)") }
+
+        Alamofire.request(url, method: .post, parameters: parameters, encoding: JSONEncoding.default, headers: headers)
             .responseJSON { (response) in
 
             switch response.result {
             case .success:
                 if let json = response.result.value as? [String: Any] {
+                    if (DEBUG_LOG) { NSLog("*** SendDataToService() json: \(json)") } // DEBUG TEST
                     completion(json)
                 }
             case .failure:
+                if (DEBUG_LOG) { NSLog("*** SendDataToService() FAILED") }
                 completion(nil)
             }
         }
@@ -212,7 +248,6 @@ class WMSAPIManager {
                         let data: [String: Any?] = [
                             // password not stored
                             "email"          : email,
-                            //"screenname"     : screenname, // TODO
                             "logged-in-user" : loggedInUser,
                             "logged-in-sig"  : loggedInSig,
                             "s3accesskey"    : accessKey,
@@ -222,11 +257,13 @@ class WMSAPIManager {
                         completion(data)
                     } else {
                         // failed to get the S3 keys
+                        if (DEBUG_LOG) { NSLog("*** login() FAILED 1: failed to get S3 keys") }
                         completion(nil)
                     }
                 }
             } else {
                 // couldn't log in
+                if (DEBUG_LOG) { NSLog("*** login() FAILED 2: couldn't log in") }
                 completion(nil)
             }
         }
@@ -239,6 +276,9 @@ class WMSAPIManager {
         // clear cookies
         Alamofire.SessionManager.default.session.configuration.httpCookieStorage?.removeCookies(since: Date.distantPast)
         if var udata = userData {
+            udata["email"] = nil
+            udata["password"] = nil
+            udata["screenname"] = nil
             udata["logged-in-user"] = nil
             udata["logged-in-sig"] = nil
             udata["s3accesskey"] = nil
@@ -250,13 +290,69 @@ class WMSAPIManager {
     }
 
     // WAS: login()
-    // Login
-    // TODO: should make work as a replacement for webLogin()
-    func authLogin(email: String, password: String, completion: @escaping ([String: Any]?) -> Void) {
-        SendDataToService(params: [
+    /// Login using a single API call to retrieve the S3 keys given a user's email and password.
+    /// - parameter email: User's email.
+    /// - parameter password: User's password.
+    /// - parameter completion: Returns a Dictionary to pass to saveUserData(), else nil if failed.
+    /// - returns: *Keys*:
+    ///   email, s3accesskey, s3secretkey, logged-in
+    ///
+    // FIXME: NOT WORKING: "Unauthorized" error msg
+    func authLogin(email: String, password: String, completion: @escaping ([String: Any?]?) -> Void) {
+
+        let params: Parameters = [
             "email"     : email,
             "password"  : password
-        ], operation: .login, completion: completion)
+        ]
+
+        SendDataToService(params: params, operation: .authenticate) {
+            (json) in
+            // success as Bool, values as dict, error as String, version as Int
+
+            if let json = json {
+                if (DEBUG_LOG) { NSLog("*** authLogin() json: \(json)") } // TEST
+                if json["success"] as? Bool ?? false,
+                   let values = json["values"] as? [String: Any],
+                   let accessKey = values["access"] as? String,
+                   let secretKey = values["secret"] as? String
+                {
+                    // success
+                    let userData: [String: Any?] = [
+                        // password not stored
+                        "email"          : email,
+                        "s3accesskey"    : accessKey,
+                        "s3secretkey"    : secretKey,
+                        "logged-in"      : true
+                    ]
+                    completion(userData)
+                } else {
+                    let errMsg = json["error"] as? String ?? "null"
+                    if (DEBUG_LOG) { NSLog("*** authLogin() FAILED 1: \(errMsg)") }
+                    completion(nil)
+                    // TODO: return error msg
+                }
+            } else {
+                // unknown error
+                if (DEBUG_LOG) { NSLog("*** authLogin() FAILED 2: Unknown Error") }
+                completion(nil)
+            }
+
+            /* TO REMOVE
+            if let values = json["values"] as? [String: Any],
+               let reason = values["reason"] as? String
+            {
+                if reason == WMConstants.errors[301] {
+                    WMGlobal.showAlert(title: "", message: "Incorrect password!", target: self)
+                } else if reason == WMConstants.errors[302] {
+                    WMGlobal.showAlert(title: "", message: "Account not found", target: self)
+                } else if reason == WMConstants.errors[303] {
+                    WMGlobal.showAlert(title: "", message: "Account is not verified", target: self)
+                }
+            } else {
+                WMGlobal.showAlert(title: "", message: "Unknown error", target: self)
+            }
+            */
+        }
     }
 
     
@@ -340,19 +436,22 @@ class WMSAPIManager {
         }
     }
 
-    // TODO: REDO?
-    // Register new Account
-    func registerAccount(params: [String: Any], completion: @escaping ([String: Any]?) -> Void) {
+    // TODO: REDO
+    /// Register new Account.
+    /// - parameter params: Requires keys "verified" (should be set false), "email", "password", and "screenname".
+    /// - parameter completion: Callback returns dictionary of json results, or nil if failed.
+    ///
+    func registerAccount(params: Parameters, completion: @escaping ([String: Any]?) -> Void) {
         SendDataToService(params: params, operation: .create, completion: completion)
     }
 
     // TODO: REDO?
     func resetPassword(email: String, completion: @escaping (Bool) -> Void) {
+
         let params = [
             "email": email,
             "action": "Send Reset Password Email"
         ]
-        
         Alamofire.request(WMSAPIManager.IA_BASE_URL + WMSAPIManager.IA_RESET_PW, method: .post, parameters: params)
         .responseString{ (response) in
             switch response.result {
@@ -364,11 +463,52 @@ class WMSAPIManager {
         }
     }
     
-    // TODO: REDO?
     // Get Account Info
     // Get additional info such as user's screenname.
-    func getAccountInfo(email: String, completion: @escaping ([String: Any]?) -> Void) {
-        SendDataToService(params: ["email": email], operation: .info, completion: completion)
+    func getAccountInfo(email: String,
+                        loggedInUser: String? = nil, loggedInSig: String? = nil,
+                        accessKey: String? = nil, secretKey: String? = nil,
+                        completion: @escaping ([String: Any]?) -> Void) {
+
+        let params: Parameters = ["email": email]
+
+        SendDataToService(params: params, operation: .info, loggedInUser: loggedInUser, loggedInSig: loggedInSig, accessKey: accessKey, secretKey: secretKey) {
+            (json) in
+            if let json = json {
+                if (DEBUG_LOG) { NSLog("*** getAccountInfo() json: \(json)") } // TEST
+                if json["success"] as? Bool ?? false, let values = json["values"] as? [String: Any] {
+                    // success
+                    completion(values)
+                } else {
+                    let errMsg = json["error"] as? String ?? "null"
+                    if (DEBUG_LOG) { NSLog("*** getAccountInfo() FAILED 1: \(errMsg)") }
+                    completion(nil)
+                    // TODO: return error msg
+                }
+            } else {
+                // unknown error
+                if (DEBUG_LOG) { NSLog("*** getAccountInfo() FAILED 2") }
+                completion(nil)
+            }
+        }
+    }
+
+    // FIXME: NOT WORKING??
+    func getScreenName(email: String,
+                       loggedInUser: String? = nil, loggedInSig: String? = nil,
+                       accessKey: String? = nil, secretKey: String? = nil,
+                       completion: @escaping (String?) -> Void) {
+
+        getAccountInfo(email: email, loggedInUser: loggedInUser, loggedInSig: loggedInSig,
+                       accessKey: accessKey, secretKey: secretKey) { (values) in
+            if let values = values, let screenname = values["screenname"] as? String {
+                if (DEBUG_LOG) { NSLog("*** getScreenName() returns: \(screenname)") }
+                completion(screenname)
+            } else {
+                if (DEBUG_LOG) { NSLog("*** getScreenName() FAILED") }
+                completion(nil)
+            }
+        }
     }
 
 
@@ -564,6 +704,7 @@ class WMSAPIManager {
     /// - parameter accessKey: String for long-term S3 auth.
     /// - parameter secretKey: String for long-term S3 auth.
     /// - parameter options: See enum & API docs for options.
+    /// - parameter completion:
     /// - parameter jobId: Returns a job ID to pass to getPageStatus() for status updates.
     ///
     func capturePage(url: String,
@@ -619,7 +760,9 @@ class WMSAPIManager {
     /// - parameter accessKey: String for long-term S3 auth.
     /// - parameter secretKey: String for long-term S3 auth.
     /// - parameter options: Normally leave off.
+    /// - parameter pending:
     /// - parameter resources: Array of Strings of URLs that the Wayback Machine archived.
+    /// - parameter completion:
     /// - parameter archiveURL: URL of archived website on the Wayback Machine, or `nil` if error.
     /// - parameter errMsg: Error message as String.
     ///
