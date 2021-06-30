@@ -210,8 +210,8 @@ class ArchiveVC: UIViewController, UIImagePickerControllerDelegate, UIPopoverCon
            //let sigProps = userData["logged-in-sig"] as? [HTTPCookiePropertyKey : Any],
            //let loggedInUser = HTTPCookie.init(properties: userProps),
            //let loggedInSig = HTTPCookie.init(properties: sigProps)
-           let loggedInUser = userData["logged-in-user"] as? String,
-           let loggedInSig = userData["logged-in-sig"] as? String,
+           //let loggedInUser = userData["logged-in-user"] as? String, // don't need
+           //let loggedInSig = userData["logged-in-sig"] as? String, // don't need
            let accessKey = userData["s3accesskey"] as? String,
            let secretKey = userData["s3secretkey"] as? String
         {
@@ -232,7 +232,7 @@ class ArchiveVC: UIViewController, UIImagePickerControllerDelegate, UIPopoverCon
                 hud.detailsLabel.text = "May take a while."
 
                 WMSAPIManager.shared.capturePage(url: saveURL,
-                    loggedInUser: loggedInUser, loggedInSig: loggedInSig,
+                    //loggedInUser: loggedInUser, loggedInSig: loggedInSig,
                     accessKey: accessKey, secretKey: secretKey, options: [])
                 { (job_id, error) in
 /* REMOVE
@@ -245,7 +245,7 @@ class ArchiveVC: UIViewController, UIImagePickerControllerDelegate, UIPopoverCon
                     }
 
                     WMSAPIManager.shared.getPageStatus(jobId: job_id,
-                        loggedInUser: loggedInUser, loggedInSig: loggedInSig,
+                        //loggedInUser: loggedInUser, loggedInSig: loggedInSig,
                         accessKey: accessKey, secretKey: secretKey, options: [])
                     { resources in
                         // pending
