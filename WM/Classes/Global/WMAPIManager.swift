@@ -56,7 +56,7 @@ class WMAPIManager: NSObject {
         parameters["secret"]    = SECRET
         parameters["version"]   = VERSION
         
-        Alamofire.request(BASE_URL + operation, method: .post, parameters: parameters, encoding: JSONEncoding.default, headers: HEADERS).responseJSON { (response) in
+        let req = Alamofire.request(BASE_URL + operation, method: .post, parameters: parameters, encoding: JSONEncoding.default, headers: HEADERS).responseJSON { (response) in
 
             switch response.result {
             case .success:
@@ -68,6 +68,7 @@ class WMAPIManager: NSObject {
 
             }
         }
+        if (DEBUG_LOG) { NSLog("*** OLD SendDataToService() curl: \(req.debugDescription)") }
     }
     
     // Register new Account

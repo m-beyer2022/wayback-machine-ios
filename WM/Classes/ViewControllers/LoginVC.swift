@@ -39,7 +39,7 @@ class LoginVC: WMBaseVC, UITextFieldDelegate {
             return
         }
         
-        //oldLogin(email: self.txtEmail.text ?? "", password: self.txtPassword.text ?? "")
+        //oldLogin(email: self.txtEmail.text ?? "", password: self.txtPassword.text ?? "") // REMOVE
         login(email: self.txtEmail.text ?? "", password: self.txtPassword.text ?? "")
     }
 
@@ -52,7 +52,7 @@ class LoginVC: WMBaseVC, UITextFieldDelegate {
                 WMGlobal.showAlert(title: "", message: "Server error", target: self)
                 return
             }
-            if (DEBUG_LOG) { NSLog("*** oldLogin() data1: \(data1)") } // TEST TO REMOVE "Unauthorized"!!
+            if (DEBUG_LOG) { NSLog("*** oldLogin() data1: \(data1)") } // TEST TO REMOVE
 
                 if (data1["success"] as? Bool) ?? false {
                     WMAPIManager.sharedManager.getAccountInfo(email: email, completion: { (data2) in
@@ -122,8 +122,8 @@ class LoginVC: WMBaseVC, UITextFieldDelegate {
 
         MBProgressHUD.showAdded(to: self.view, animated: true)
 
-        WMSAPIManager.shared.login(email: email, password: password) { (userData) in
-        //WMSAPIManager.shared.authLogin(email: email, password: password) { (userData) in // Unauthorized error // REMOVE for now since login() works
+        //WMSAPIManager.shared.login(email: email, password: password) { (userData) in // REMOVE
+        WMSAPIManager.shared.authLogin(email: email, password: password) { (userData) in
 
             if (DEBUG_LOG) { NSLog("*** LoginVC login() userData: \(String(describing: userData))") } // TEST TO REMOVE
 

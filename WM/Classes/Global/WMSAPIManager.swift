@@ -56,9 +56,10 @@ class WMSAPIManager {
     static var UPLOAD_BASE_URL     = "https://s3.us.archive.org"
 
     // Xauthn Authentication Service
+    // these ACCESS & SECRET keys still required
     static var XA_BASE_URL         = "https://archive.org/services/xauthn/" // BASE_URL
-    //static let XA_ACCESS           = "trS8dVjP8dzaE296" // TODO: REMOVE
-    //static let XA_SECRET           = "ICXDO78cnzUlPAt1" // TODO: REMOVE
+    static let XA_ACCESS           = "trS8dVjP8dzaE296"
+    static let XA_SECRET           = "ICXDO78cnzUlPAt1"
     static let XA_VERSION          = 1
     public enum XAuthOperation {
         case info, authenticate, identify, create, chkprivs, login
@@ -100,7 +101,7 @@ class WMSAPIManager {
     static let HEADERS: HTTPHeaders = [
         "User-Agent": "Wayback_Machine_iOS/\(APP_VERSION)",
         "Wayback-Extension-Version": "Wayback_Machine_iOS/\(APP_VERSION)",
-        /* "Wayback-Api-Version": "2" */
+        "Wayback-Api-Version": "2"
     ]
     #elseif os(tvOS)
     #endif
@@ -185,6 +186,9 @@ class WMSAPIManager {
         if (DEBUG_LOG) { NSLog("***   accessKey: \(String(describing: accessKey))") }
         if (DEBUG_LOG) { NSLog("***   secretKey: \(String(describing: secretKey))") }
 
+        // clear existing cookies
+        Alamofire.SessionManager.default.session.configuration.httpCookieStorage?.removeCookies(since: Date.distantPast)
+
         // prepare cookies
         if let loggedInUser = loggedInUser, let loggedInSig = loggedInSig {
             setArchiveCookie(name: "logged-in-user", value: loggedInUser)
@@ -194,19 +198,19 @@ class WMSAPIManager {
         // prepare request
         var parameters = params
         parameters["version"]   = WMSAPIManager.XA_VERSION
+        parameters["access"] = WMSAPIManager.XA_ACCESS // accessKey
+        parameters["secret"] = WMSAPIManager.XA_SECRET // secretKey
         var headers = WMSAPIManager.HEADERS
         headers["Accept"] = "application/json"
         if let accessKey = accessKey, let secretKey = secretKey {
-            parameters["access"] = accessKey // WMSAPIManager.XA_ACCESS
-            parameters["secret"] = secretKey // WMSAPIManager.XA_SECRET
-            //headers["Authorization"] = "LOW \(accessKey):\(secretKey)" // TEST: still not working
+            headers["Authorization"] = "LOW \(accessKey):\(secretKey)" // don't know if this does anything
         }
 
         // TEST TO REMOVE
         if (DEBUG_LOG) { NSLog("***   headers: \(headers)") }
         if (DEBUG_LOG) { NSLog("***   params: \(parameters)") }
 
-        Alamofire.request(url, method: .post, parameters: parameters, encoding: JSONEncoding.default, headers: headers)
+        let req = Alamofire.request(url, method: .post, parameters: parameters, encoding: JSONEncoding.default, headers: headers)
             .responseJSON { (response) in
 
             switch response.result {
@@ -220,6 +224,7 @@ class WMSAPIManager {
                 completion(nil)
             }
         }
+        if (DEBUG_LOG) { NSLog("***   curl: \(req.debugDescription)") }
     }
 
     

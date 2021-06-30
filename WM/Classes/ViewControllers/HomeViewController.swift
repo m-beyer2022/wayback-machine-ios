@@ -292,9 +292,10 @@ class HomeViewController: UIViewController, UITextFieldDelegate, MBProgressHUDDe
         }
     }
     
+    // TODO: MOVE to API Manager!
     func getAllArchives(url: String, completion: @escaping ([Any]?) -> Void) {
         let param = "?url=" + url + "&fl=timestamp,original&output=json"
-        var request = URLRequest(url: URL(string: "http://web.archive.org/cdx/search/cdx" + param)!)
+        var request = URLRequest(url: URL(string: "https://web.archive.org/cdx/search/cdx" + param)!)
         request.httpMethod = "GET"
         request.setValue("Wayback_Machine_iOS/\(APP_VERSION)", forHTTPHeaderField: "User-Agent")
         request.setValue("Wayback_Machine_iOS/\(APP_VERSION)", forHTTPHeaderField: "Wayback-Extension-Version")
