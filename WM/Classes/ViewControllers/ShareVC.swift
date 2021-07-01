@@ -84,8 +84,8 @@ open class ShareVC: UIViewController {
                 
                 MBProgressHUD.showAdded(to: self.view, animated: true)
                 WMSAPIManager.shared.saveToMyWebArchive(url: snapshotUrl, snapshot: snapshot,
-                    loggedInUser: userData["logged-in-user"] as? String,
-                    loggedInSig: userData["logged-in-sig"] as? String,
+                    //loggedInUser: userData["logged-in-user"] as? String, // REMOVE
+                    //loggedInSig: userData["logged-in-sig"] as? String, // REMOVE
                     accessKey: userData["s3accesskey"] as? String,
                     secretKey: userData["s3secretkey"] as? String)
                 { (success) in

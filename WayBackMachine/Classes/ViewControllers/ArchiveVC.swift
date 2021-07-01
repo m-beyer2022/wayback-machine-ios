@@ -232,7 +232,7 @@ class ArchiveVC: UIViewController, UIImagePickerControllerDelegate, UIPopoverCon
                 hud.detailsLabel.text = "May take a while."
 
                 WMSAPIManager.shared.capturePage(url: saveURL,
-                    //loggedInUser: loggedInUser, loggedInSig: loggedInSig,
+                    //loggedInUser: loggedInUser, loggedInSig: loggedInSig, // REMOVE
                     accessKey: accessKey, secretKey: secretKey, options: [])
                 { (job_id, error) in
 /* REMOVE
@@ -246,7 +246,7 @@ class ArchiveVC: UIViewController, UIImagePickerControllerDelegate, UIPopoverCon
                     }
 
                     WMSAPIManager.shared.getPageStatus(jobId: job_id,
-                        //loggedInUser: loggedInUser, loggedInSig: loggedInSig,
+                        //loggedInUser: loggedInUser, loggedInSig: loggedInSig, // REMOVE
                         accessKey: accessKey, secretKey: secretKey, options: [])
                     { resources in
                         // pending

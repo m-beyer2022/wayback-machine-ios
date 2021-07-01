@@ -132,9 +132,8 @@ class LoginVC: WMBaseVC, UITextFieldDelegate {
                 userData["add-to-my-web-archive"] = self.btnCheck.isSelected
 
                 WMSAPIManager.shared.getScreenName(email: email,
-                    // loggedInUser: nil, loggedInSig: nil, // TEST
-                    loggedInUser: userData["logged-in-user"] as? String,
-                    loggedInSig: userData["logged-in-sig"] as? String,
+                    //loggedInUser: userData["logged-in-user"] as? String, // REMOVE
+                    //loggedInSig: userData["logged-in-sig"] as? String, // REMOVE
                     accessKey: userData["s3accesskey"] as? String,
                     secretKey: userData["s3secretkey"] as? String)
                 {

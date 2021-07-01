@@ -498,7 +498,6 @@ class WMSAPIManager {
         }
     }
 
-    // FIXME: NOT WORKING??
     func getScreenName(email: String,
                        loggedInUser: String? = nil, loggedInSig: String? = nil,
                        accessKey: String? = nil, secretKey: String? = nil,
@@ -754,7 +753,7 @@ class WMSAPIManager {
                 completion(nil, error)
             }
         }
-        if (DEBUG_LOG) { NSLog("***   curl: \(req.debugDescription)") }
+        if (DEBUG_LOG) { NSLog("*** capturePage() curl: \(req.debugDescription)") }
     }
 
     /// Use to retrieve status of saving a page in the Wayback Machine.
@@ -883,23 +882,28 @@ class WMSAPIManager {
         ] as Parameters
 
         // make request
-        Alamofire.request(WMSAPIManager.API_BASE_URL + WMSAPIManager.API_MY_WEB_ARCHIVE,
+        let req = Alamofire.request(WMSAPIManager.API_BASE_URL + WMSAPIManager.API_MY_WEB_ARCHIVE,
                           method: .post, parameters: params,
                           encoding: JSONEncoding.default, headers: headers)
             .responseJSON { (response) in
 
             switch response.result {
             case .success( _):
-                if let json = response.result.value as? [String: Any],
-                    let success = json["success"] as? Bool {
-                    completion(success)
-                } else {
-                    completion(false)
+
+                if let json = response.result.value as? [String: Any] {
+                    if (DEBUG_LOG) { NSLog("*** saveToMyWebArchive() json: \(json)") }
+                    if let success = json["success"] as? Bool {
+                        completion(success)
+                    } else {
+                        completion(false)
+                    }
                 }
             case .failure( _):
+                if (DEBUG_LOG) { NSLog("*** saveToMyWebArchive() FAILED") }
                 completion(false)
             }
         }
+        if (DEBUG_LOG) { NSLog("*** saveToMyWebArchive() curl: \(req.debugDescription)") }
     }
 
     // TODO: TEST & Review Code
