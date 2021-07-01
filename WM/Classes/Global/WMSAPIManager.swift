@@ -737,7 +737,7 @@ class WMSAPIManager {
         if options.contains(.emailOutlinks) { params["email_result"] = "1" }
 
         // make request
-        Alamofire.request(WMSAPIManager.API_BASE_URL + WMSAPIManager.API_SPN2_SAVE,
+        let req = Alamofire.request(WMSAPIManager.API_BASE_URL + WMSAPIManager.API_SPN2_SAVE,
                           method: .post, parameters: params, headers: headers)
         .responseJSON { (response) in
 
@@ -754,6 +754,7 @@ class WMSAPIManager {
                 completion(nil, error)
             }
         }
+        if (DEBUG_LOG) { NSLog("***   curl: \(req.debugDescription)") }
     }
 
     /// Use to retrieve status of saving a page in the Wayback Machine.

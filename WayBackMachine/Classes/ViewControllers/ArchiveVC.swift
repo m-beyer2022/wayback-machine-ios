@@ -241,6 +241,7 @@ class ArchiveVC: UIViewController, UIImagePickerControllerDelegate, UIPopoverCon
                     guard let job_id = job_id else {
                         MBProgressHUD.hide(for: self.view, animated: true)
                         WMGlobal.showAlert(title: "Error", message: "Save Failed!", target: self)
+                        if (DEBUG_LOG) { NSLog("*** ArchiveVC capturePage() FAILED: \(String(describing: error))") }
                         return
                     }
 

@@ -61,6 +61,9 @@ class HomeViewController: UIViewController, UITextFieldDelegate, MBProgressHUDDe
             WMGlobal.showAlert(title: "", message: "The URL is invalid", target: self)
         } else {
             showProgress()
+            self.progressHUD?.label.text = "Archiving..."
+            self.progressHUD?.detailsLabel.text = "May take a while."
+
             WMSAPIManager.shared.checkURLBlocked(url: saveURL) {
                 (isBlocked) in
                 
@@ -72,24 +75,29 @@ class HomeViewController: UIViewController, UITextFieldDelegate, MBProgressHUDDe
 
                 if let userData = WMGlobal.getUserData(), let loggedIn = userData["logged-in"] as? Bool, loggedIn == true {
                     // Save Page Now
-                    let loggedInUser = userData["logged-in-user"] as? String,
-                        loggedInSig = userData["logged-in-sig"] as? String,
-                        accessKey = userData["s3accesskey"] as? String,
+                    //let loggedInUser = userData["logged-in-user"] as? String, // REMOVE
+                    //    loggedInSig = userData["logged-in-sig"] as? String, // REMOVE
+                    let accessKey = userData["s3accesskey"] as? String,
                         secretKey = userData["s3secretkey"] as? String
 
-                    WMSAPIManager.shared.capturePage(url: saveURL, loggedInUser: loggedInUser, loggedInSig: loggedInSig, accessKey: accessKey, secretKey: secretKey, options: []) {
+                    WMSAPIManager.shared.capturePage(url: saveURL, accessKey: accessKey, secretKey: secretKey, options: []) {
                         (jobId, error) in
 
                         guard let jobId = jobId else {
                             // exit if SPN fails
                             self.hideProgress(isBlocked)
+                            WMGlobal.showAlert(title: "Error", message: "Save Failed!", target: self)
+                            if (DEBUG_LOG) { NSLog("*** HomeVC capturePage() FAILED: \(String(describing: error))") }
                             return
                         }
 
-                        WMSAPIManager.shared.getPageStatus(jobId: jobId, loggedInUser: loggedInUser, loggedInSig: loggedInSig, accessKey: accessKey, secretKey: secretKey, options: []) {
+                        WMSAPIManager.shared.getPageStatus(jobId: jobId, accessKey: accessKey, secretKey: secretKey, options: []) {
                             (resources) in
                             // pending
-
+                            if let resources = resources {
+                                // update HUD with count of URLs archived
+                                self.progressHUD?.detailsLabel.text = "\(resources.count)"
+                            }
                         } completion: {
                             (archiveURL, errMsg, resultJSON) in
 
