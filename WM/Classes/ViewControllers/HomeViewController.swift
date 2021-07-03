@@ -75,8 +75,6 @@ class HomeViewController: UIViewController, UITextFieldDelegate, MBProgressHUDDe
 
                 if let userData = WMGlobal.getUserData(), let loggedIn = userData["logged-in"] as? Bool, loggedIn == true {
                     // Save Page Now
-                    //let loggedInUser = userData["logged-in-user"] as? String, // REMOVE
-                    //    loggedInSig = userData["logged-in-sig"] as? String, // REMOVE
                     let accessKey = userData["s3accesskey"] as? String,
                         secretKey = userData["s3secretkey"] as? String
 
@@ -115,57 +113,6 @@ class HomeViewController: UIViewController, UITextFieldDelegate, MBProgressHUDDe
                             }
                         } // getPageStatus
                     } // capturePage
-                    
-/* TO REMOVE
-                    WMAPIManager
-                        .sharedManager
-                        .getCookieData(email: userData["email"] as? String ?? "",
-                                       password: userData["password"] as? String ?? "",
-                                       completion: { (cookieData) in
-
-                        guard let loggedInSig = cookieData["logged-in-sig"] as? HTTPCookie else { return }
-                        guard let loggedInUser = cookieData["logged-in-user"] as? HTTPCookie else { return }
-                        var tmpData = userData
-                        // can't save HTTPCookie in userData directly
-                        tmpData["logged-in-sig"] = loggedInSig.properties
-                        tmpData["logged-in-user"] = loggedInUser.properties
-                        WMGlobal.saveUserData(userData: tmpData)
-                                        
-                        WMAPIManager
-                            .sharedManager
-                            .request_capture(url: self.getURL(url: tURL),
-                                             logged_in_user: loggedInUser,
-                                             logged_in_sig: loggedInSig,
-                                             completion: { (job_id) in
-                                
-                            guard let job_id = job_id else {
-                                self.hideProgress(isBlocked)
-                                return
-                            }
-
-                            WMAPIManager
-                                .sharedManager
-                                .request_capture_status(job_id: job_id,
-                                                        logged_in_user: loggedInUser,
-                                                        logged_in_sig: loggedInSig,
-                                                        completion: { (url, error) in
-                                if url == nil || url?.isEmpty ?? false {
-                                    self.hideProgress(isBlocked)
-                                    WMGlobal.showAlert(title: "Error", message: (error ?? ""), target: self)
-                                } else {
-                                    self.hideProgress(isBlocked)
-                                    if let shareVC = self.storyboard?.instantiateViewController(withIdentifier: "ShareVC") as? ShareVC {
-                                        shareVC.modalPresentationStyle = .fullScreen
-                                        shareVC.shareUrl = url!
-                                        DispatchQueue.main.async {
-                                            self.present(shareVC, animated: true, completion: nil)
-                                        }
-                                    }
-                                }
-                            })
-                        })
-                    })
-*/
                 } // userData
             } // checkURLBlocked
         } // verifyURL

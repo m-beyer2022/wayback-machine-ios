@@ -72,23 +72,6 @@ class WMSAPIManager {
         .chkprivs: "?op=chkprivs",
         .login: "?op=login"
     ]
-    // TO REMOVE
-    static let XA_CREATE           = "?op=create"
-    static let XA_LOGIN            = "?op=authenticate"
-    static let XA_INFO             = "?op=info"
-
-  /* TO REMOVE
-  let BASE_URL                = "https://archive.org/services/xauthn/"
-  let SPARKLINE_URL           = "https://web.archive.org/__wb/sparkline"
-  let MY_WEB_ARCHIVE_URL      = "https://web.archive.org/__wb/web-archive/"
-  let WEB_BASE_URL            = "https://archive.org"
-  let UPLOAD_BASE_URL         = "https://s3.us.archive.org"
-  let SPN2_URL                = "https://web.archive.org/save/"
-  let API_CREATE              = "?op=create"
-  let API_LOGIN               = "?op=authenticate"
-  let API_INFO                = "?op=info"
-  
-  */
 
     /// update headers to reflect different apps
     #if os(macOS)
@@ -149,7 +132,6 @@ class WMSAPIManager {
     ///////////////////////////////////////////////////////////////////////////////////
     // MARK: - API Wrappers
 
-    // GET
     func SendDataToSparkLine(params: Parameters, completion: @escaping ([String: Any]?) -> Void) {
 
         Alamofire.request(WMSAPIManager.API_BASE_URL + WMSAPIManager.API_SPARKLINE,
@@ -340,31 +322,8 @@ class WMSAPIManager {
                 if (DEBUG_LOG) { NSLog("*** authLogin() FAILED 2: Unknown Error") }
                 completion(nil)
             }
-
-            /* TO REMOVE
-            if let values = json["values"] as? [String: Any],
-               let reason = values["reason"] as? String
-            {
-                if reason == WMConstants.errors[301] {
-                    WMGlobal.showAlert(title: "", message: "Incorrect password!", target: self)
-                } else if reason == WMConstants.errors[302] {
-                    WMGlobal.showAlert(title: "", message: "Account not found", target: self)
-                } else if reason == WMConstants.errors[303] {
-                    WMGlobal.showAlert(title: "", message: "Account is not verified", target: self)
-                }
-            } else {
-                WMGlobal.showAlert(title: "", message: "Unknown error", target: self)
-            }
-            */
         }
     }
-
-    
-    // TODO: Calls to getCookieData() must be replaced.
-    // This is like webLogin() but returns a dictionary of keys "logged-in-user" and "logged-in-sig",
-    // with values of HTTPCookie, while webLogin() returns strings.
-    // func getCookieData(email: String, password: String, completion: @escaping([String: Any]) -> Void) { }
-
     
     /// Login using the web login form, which returns cookie strings that may be used
     /// for short-term auth. For longer-term, retrieve the A3 keys using getIAS3Keys().
@@ -860,7 +819,6 @@ class WMSAPIManager {
     func saveToMyWebArchive(url: String, snapshot: String,
                             loggedInUser: String? = nil, loggedInSig: String? = nil,
                             accessKey: String? = nil, secretKey: String? = nil,
-                            //logged_in_user: HTTPCookie, logged_in_sig: HTTPCookie, // OLD
                             completion: @escaping (_ isSuccess: Bool) -> Void)
     {
         // prepare cookies
@@ -958,7 +916,7 @@ class WMSAPIManager {
                     if #available(iOS 11.0, *) {
                         estimateTime = progress.estimatedTimeRemaining
                     }
-                    NSLog("*** SendDataToBucket() upload: \(uploaded), total: \(total), time: \(estimateTime ?? 0)")
+                    if (DEBUG_LOG) { NSLog("*** SendDataToBucket() upload: \(uploaded), total: \(total), time: \(estimateTime ?? 0)") }
                 }
             }
             .responseData(completionHandler: { (result) in
@@ -973,7 +931,5 @@ class WMSAPIManager {
                 }
             })
     }
-
-    
 
 }

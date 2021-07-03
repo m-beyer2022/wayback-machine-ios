@@ -37,22 +37,6 @@ class ProfileVC: WMBaseVC {
     }
     
     @IBAction func onLogoutPressed(_ sender: Any) {
-
-        /* TO REMOVE
-        WMGlobal.saveUserData(userData: [
-            "email"             : nil,
-            "password"          : nil,
-            "screenname"        : nil,
-            "logged-in"         : false,
-            "logged-in-user"    : nil,
-            "logged-in-sig"     : nil,
-            "s3accesskey"       : nil,
-            "s3secretkey"       : nil,
-            "add-to-my-web-archive" : false
-        ])
-        WMAPIManager.sharedManager.logout()
-        */
-
         // clear any stored login data
         if let userData = WMSAPIManager.shared.logout(userData: WMGlobal.getUserData()) {
             WMGlobal.saveUserData(userData: userData)

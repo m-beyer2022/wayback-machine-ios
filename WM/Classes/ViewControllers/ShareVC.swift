@@ -19,10 +19,11 @@ open class ShareVC: UIViewController {
     open override func viewDidLoad() {
         super.viewDidLoad()
         
-        // TODO: why / what is this doing?
+        // auto-saves to My Archive if switch turned on
         if let userData = WMGlobal.getUserData(),
             let addToMyWebArchive = userData["add-to-my-web-archive"] as? Bool,
-            addToMyWebArchive == true {
+            addToMyWebArchive == true
+        {
             btnAdd.isHidden = true
             self.saveToMyArchive(showAlert: false)
         }
