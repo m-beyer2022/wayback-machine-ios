@@ -34,7 +34,8 @@ class ArchiveVC: UIViewController, UIImagePickerControllerDelegate, UIPopoverCon
     var fileData: Data?
     var mediaType: String?
     var placeholderLabel: UILabel!
-    
+    var progressHUD: MBProgressHUD?
+
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -250,9 +251,9 @@ class ArchiveVC: UIViewController, UIImagePickerControllerDelegate, UIPopoverCon
                         accessKey: accessKey, secretKey: secretKey, options: [])
                     { resources in
                         // pending
-                        if let resources = resources {
+                        if let resources = resources, resources.count > 0 {
                             // update HUD with count of URLs archived
-                            hud.detailsLabel.text = "\(resources.count)"
+                            hud.detailsLabel.text = "\(resources.count) URLs Saved."
                         }
                     } completion: { archiveURL, errMsg, resultJSON in
 /* REMOVE
@@ -299,8 +300,9 @@ class ArchiveVC: UIViewController, UIImagePickerControllerDelegate, UIPopoverCon
         let subjectTags = txtSubjectTags.text ?? ""
         let filename = "\(identifier).\(fileUrl.pathExtension)"
         let startTime = Date()
-        MBProgressHUD.showAdded(to: self.view, animated: true)
-        
+        self.progressHUD = MBProgressHUD.showAdded(to: self.view, animated: true)
+        self.progressHUD?.label.text = "Uploading..."
+
         WMSAPIManager.shared.SendDataToBucket(params: [
             "identifier" : identifier,
             "title": title,
@@ -311,7 +313,11 @@ class ArchiveVC: UIViewController, UIImagePickerControllerDelegate, UIPopoverCon
             "s3accesskey" : s3accesskey,
             "s3secretkey" : s3secretkey,
             "data" : (fileData != nil) ? fileData! : fileUrl
-        ]) { (success, uploadedFileSize) in
+        ]) { (progress) in
+            // pending
+            self.progressHUD?.detailsLabel.text = progress.localizedAdditionalDescription
+        }
+        completion: { (success, uploadedFileSize) in
             let endTime = Date()
             let interval = endTime.timeIntervalSince(startTime)
             

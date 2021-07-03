@@ -94,9 +94,9 @@ class HomeViewController: UIViewController, UITextFieldDelegate, MBProgressHUDDe
                         WMSAPIManager.shared.getPageStatus(jobId: jobId, accessKey: accessKey, secretKey: secretKey, options: []) {
                             (resources) in
                             // pending
-                            if let resources = resources {
+                            if let resources = resources, resources.count > 0 {
                                 // update HUD with count of URLs archived
-                                self.progressHUD?.detailsLabel.text = "\(resources.count)"
+                                self.progressHUD?.detailsLabel.text = "\(resources.count) URLs Saved."
                             }
                         } completion: {
                             (archiveURL, errMsg, resultJSON) in
@@ -182,7 +182,8 @@ class HomeViewController: UIViewController, UITextFieldDelegate, MBProgressHUDDe
             WMGlobal.showAlert(title: "", message: WMConstants.errors[201] ?? WMConstants.unknown, target: self)
         } else {
             showProgress()
-            
+            self.progressHUD?.label.text = "Retrieving Page..."
+
             WMSAPIManager.shared.checkURLBlocked(url: self.getURL(url: tURL), completion: { (isBlocked) in
                 if isBlocked {
                     self.hideProgress(isBlocked)
@@ -205,7 +206,7 @@ class HomeViewController: UIViewController, UITextFieldDelegate, MBProgressHUDDe
     @IBAction func _onFirst(_ sender: Any) {
         let tURL = self.txtURL.text ?? ""
         if tURL.isEmpty {
-            showErrorMessage(message: "Please type a URL")
+            WMGlobal.showAlert(title: "", message: "Please type a URL", target: self)
             return
         }
         
@@ -213,7 +214,8 @@ class HomeViewController: UIViewController, UITextFieldDelegate, MBProgressHUDDe
             showErrorMessage(message: "The URL is invalid")
         } else {
             showProgress()
-            
+            self.progressHUD?.label.text = "Retrieving Page..."
+
             WMSAPIManager.shared.checkURLBlocked(url: self.getURL(url: tURL), completion: { (isBlocked) in
                 if isBlocked {
                     self.hideProgress(isBlocked)
@@ -236,7 +238,7 @@ class HomeViewController: UIViewController, UITextFieldDelegate, MBProgressHUDDe
     @IBAction func _onAll(_ sender: Any) {
         let tURL = self.txtURL.text ?? ""
         if tURL.isEmpty {
-            showErrorMessage(message: "Please type a URL")
+            WMGlobal.showAlert(title: "", message: "Please type a URL", target: self)
             return
         }
 
@@ -244,6 +246,8 @@ class HomeViewController: UIViewController, UITextFieldDelegate, MBProgressHUDDe
             showErrorMessage(message: "The URL is invalid")
         } else {
             showProgress()
+            self.progressHUD?.label.text = "Retrieving Overview..."
+
             WMSAPIManager.shared.checkURLBlocked(url: self.getURL(url: tURL), completion: { (isBlocked) in
                 if isBlocked {
                     self.hideProgress(isBlocked)
@@ -467,6 +471,8 @@ class HomeViewController: UIViewController, UITextFieldDelegate, MBProgressHUDDe
     }
     
     func showProgress() -> Void {
+        self.progressHUD?.label.text = nil
+        self.progressHUD?.detailsLabel.text = nil
         self.progressHUD?.show(animated: true)
     }
     

@@ -30,7 +30,9 @@ class ForgotVC: WMBaseVC {
             return
         }
         
-        MBProgressHUD.showAdded(to: self.view, animated: true)
+        let hud = MBProgressHUD.showAdded(to: self.view, animated: true)
+        hud.label.text = "Resetting..."
+
         WMSAPIManager.shared.resetPassword(email: email) { (success) in
             MBProgressHUD.hide(for: self.view, animated: true)
             self.txtEmail.text = ""

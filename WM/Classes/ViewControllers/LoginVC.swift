@@ -120,10 +120,11 @@ class LoginVC: WMBaseVC, UITextFieldDelegate {
         // just return if empty, since error alert already done elsewhere
         if email.isEmpty || password.isEmpty { return }
 
-        MBProgressHUD.showAdded(to: self.view, animated: true)
+        let hud = MBProgressHUD.showAdded(to: self.view, animated: true)
+        hud.label.text = "Logging in..."
 
-        //WMSAPIManager.shared.login(email: email, password: password) { (userData) in // REMOVE
-        WMSAPIManager.shared.authLogin(email: email, password: password) { (userData) in
+        //WMSAPIManager.shared.login(email: email, password: password) { (userData) in // this gets the cookies
+        WMSAPIManager.shared.authLogin(email: email, password: password) { (userData) in // doesn't get cookies
 
             if (DEBUG_LOG) { NSLog("*** LoginVC login() userData: \(String(describing: userData))") } // TEST TO REMOVE
 

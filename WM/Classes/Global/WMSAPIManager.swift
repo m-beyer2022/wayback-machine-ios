@@ -302,7 +302,6 @@ class WMSAPIManager {
     /// - returns: *Keys*:
     ///   email, s3accesskey, s3secretkey, logged-in
     ///
-    // FIXME: NOT WORKING: "Unauthorized" error msg
     func authLogin(email: String, password: String, completion: @escaping ([String: Any?]?) -> Void) {
 
         let params: Parameters = [
@@ -907,8 +906,10 @@ class WMSAPIManager {
     }
 
     // TODO: TEST & Review Code
-    func SendDataToBucket(params: [String: Any?], completion: @escaping (Bool, Int64) -> Void) {
-
+    func SendDataToBucket(params: [String: Any?],
+                          pending: @escaping (Progress) -> Void = {_ in },
+                          completion: @escaping (Bool, Int64) -> Void)
+    {
         let identifier  = params["identifier"]  as? String ?? ""
         let title       = params["title"]       as? String ?? "", uriTitle = uriEncode(title) ?? ""
         let description = params["description"] as? String ?? "", uriDescription = uriEncode(description) ?? ""
@@ -948,14 +949,17 @@ class WMSAPIManager {
         }
 
         uploadRequest?
-            .uploadProgress {(progress) in
-                uploaded = progress.completedUnitCount
-                let total = progress.totalUnitCount
-                var estimateTime: TimeInterval?
-                if #available(iOS 11.0, *) {
-                    estimateTime = progress.estimatedTimeRemaining
+            .uploadProgress { (progress) in
+                pending(progress)
+                if (DEBUG_LOG) {
+                    uploaded = progress.completedUnitCount
+                    let total = progress.totalUnitCount
+                    var estimateTime: TimeInterval?
+                    if #available(iOS 11.0, *) {
+                        estimateTime = progress.estimatedTimeRemaining
+                    }
+                    NSLog("*** SendDataToBucket() upload: \(uploaded), total: \(total), time: \(estimateTime ?? 0)")
                 }
-                if (DEBUG_LOG) { NSLog("*** SendDataToBucket() upload: \(uploaded), total: \(total), time: \(estimateTime ?? 0)") }
             }
             .responseData(completionHandler: { (result) in
                 switch result.result {

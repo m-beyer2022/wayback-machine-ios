@@ -54,7 +54,8 @@ class SignupVC: WMBaseVC, UITextFieldDelegate {
             return
         }
         
-        MBProgressHUD.showAdded(to: self.view, animated: true)
+        let hud = MBProgressHUD.showAdded(to: self.view, animated: true)
+        hud.label.text = "Creating New Account"
         
         WMSAPIManager.shared.registerAccount(
             params: [

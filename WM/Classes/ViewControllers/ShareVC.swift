@@ -82,10 +82,12 @@ open class ShareVC: UIViewController {
                         return
                 }
                 
-                MBProgressHUD.showAdded(to: self.view, animated: true)
+                let hud = MBProgressHUD.showAdded(to: self.view, animated: true)
+                hud.label.text = "Saving..."
+
                 WMSAPIManager.shared.saveToMyWebArchive(url: snapshotUrl, snapshot: snapshot,
-                    //loggedInUser: userData["logged-in-user"] as? String, // REMOVE
-                    //loggedInSig: userData["logged-in-sig"] as? String, // REMOVE
+                    loggedInUser: userData["logged-in-user"] as? String, // REMOVE or KEEP?
+                    loggedInSig: userData["logged-in-sig"] as? String, // REMOVE or KEEP?
                     accessKey: userData["s3accesskey"] as? String,
                     secretKey: userData["s3secretkey"] as? String)
                 { (success) in
